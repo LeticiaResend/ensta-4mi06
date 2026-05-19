@@ -1,0 +1,189 @@
+
+
+\documentclass[11pt,a4paper]{article}
+
+% ----------------------------------------------------
+% PACKAGES ESSENTIELS
+% ----------------------------------------------------
+\usepackage[utf8]{inputenc}        % Encodage du texte (UTF-8)
+\usepackage[T1]{fontenc}           % Encodage des caractères français
+\usepackage[french]{babel}         % Langue du document
+\usepackage{geometry}              % Gestion des marges
+\usepackage{graphicx}              % Insertion d’images
+\usepackage{amsmath, amssymb}      % Symboles et équations mathématiques
+\usepackage{siunitx}               % Unités du Système International (SI)
+\usepackage{caption}               % Amélioration des légendes
+\usepackage{subcaption}            % Sous-figures
+\usepackage{booktabs}              % Tableaux esthétiques
+\usepackage{float}                 % Contrôle de la position des figures
+\usepackage{hyperref}              % Liens cliquables dans le PDF
+\usepackage{xcolor}                % Gestion des couleurs
+\usepackage{fancyhdr}              % En-têtes et pieds de page personnalisés
+\usepackage{enumitem}              % Listes personnalisées
+\usepackage{physics}               % Notation physique (contraintes, déformations, etc.)
+
+% ----------------------------------------------------
+% PARAMÈTRES DE MISE EN PAGE
+% ----------------------------------------------------
+\geometry{margin=2.5cm}            % Marges du document
+\setlength{\parskip}{0.5em}        % Espacement entre les paragraphes
+\setlength{\parindent}{0pt}        % Pas d’indentation au début des paragraphes
+
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=gray
+}
+
+% ----------------------------------------------------
+% COULEURS ENSTA
+% ----------------------------------------------------
+\definecolor{enstaBleuFonce}{HTML}{003366}   % Bleu marine (sections)
+\definecolor{enstaBleuClair}{HTML}{0073CF}   % Bleu moyen (sous-sections)
+
+% ----------------------------------------------------
+% STYLE DES SECTIONS
+% ----------------------------------------------------
+\usepackage{titlesec}
+
+% Section (bleu marine, majuscule, gras)
+\titleformat{\section}
+  {\normalfont\huge\bfseries\color{enstaBleuFonce}}
+  {\thesection}{1em}{}
+
+% Sous-section (bleu clair, gras)
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{enstaBleuClair}}
+  {\thesubsection}{1em}{}
+
+% Sous-sous-section en noir mais plus discret
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{black!70}}
+  {\thesubsubsection}{1em}{}
+
+% Horizontal line
+\titleformat{\section}[block]
+  {\normalfont\Large\bfseries\color{enstaBleuFonce}}
+  {\thesection}{1em}{}
+  [\vspace{0.3em}\titlerule\color{enstaBleuFonce}\vspace{0.3em}]
+
+
+% ----------------------------------------------------
+% EN-TÊTES ET PIEDS DE PAGE
+% ----------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{ENSTA Paris}
+\fancyhead[R]{Projet 2 : Indexation vidéo - Découpage en plans}
+\fancyfoot[C]{\thepage}
+
+
+
+% ----------------------------------------------------
+% FANCY QUOTES
+% ----------------------------------------------------
+% for adjustwidth environment
+\usepackage[strict]{changepage}
+
+% for formal definitions
+\usepackage{framed}
+
+% environment derived from framed.sty: see leftbar environment definition
+\definecolor{formalshade}{rgb}{0.95,0.95,1}
+
+\newenvironment{formal}{%
+  \def\FrameCommand{%
+    \hspace{1pt}%
+    {\color{enstaBleuFonce}\vrule width 2pt}%
+    {\color{formalshade}\vrule width 4pt}%
+    \colorbox{formalshade}%
+  }%
+  \MakeFramed{\advance\hsize-\width\FrameRestore}%
+  \noindent\hspace{-4.55pt}% disable indenting first paragraph
+  \begin{adjustwidth}{}{7pt}%
+  \vspace{2pt}\vspace{2pt}%
+}
+{%
+  \vspace{6pt}\end{adjustwidth}\endMakeFramed%
+}
+
+% ----------------------------------------------------
+% DÉBUT DU DOCUMENT
+% ----------------------------------------------------
+\begin{document}
+
+% ====================================================
+% PAGE DE COUVERTURE
+% ====================================================
+\begin{titlepage}
+    \centering
+    \includegraphics[width=0.6\textwidth]{images/logo_ensta.jpg}\par\vspace{1cm}
+    %{\scshape\LARGE ENSTA Paris \par}
+    \vspace{2cm}
+    {\Large  CSC\_4MI06 - Compléments pour l'Analyse d'Images \par}
+    \vspace{0.2cm}
+    
+    
+    {\huge\bfseries Projet 2 : Indexation vidéo - Découpage en plans \par}
+    \vspace{3cm}
+    {\Large Leticia Maria RESENDE \par}
+    {\Large Naomy Isabela GOMES BIAGGI  \par}
+
+    \vspace{0.5em}
+    \vspace{1.5cm}
+
+    \vfill
+    \vspace{0.8cm}
+    %\textbf{Date :} \today \par
+    Mai 2026 \par
+    \vspace{1cm}
+
+
+\end{titlepage}
+
+
+\section{Introduction}
+
+L’objectif de ce projet est d’étudier des méthodes d’indexation automatique de vidéos afin de détecter les changements de plans. Un plan correspond à une prise de vue continue de la caméra, durant laquelle le mouvement reste cohérent. Les changements de plans provoquent généralement des variations importantes dans les caractéristiques visuelles de la vidéo.
+
+Dans cette première partie, nous nous intéressons à l’utilisation des histogrammes chromatiques afin d’analyser les variations de contenu entre images successives.
+
+\section{Histogrammes chromatiques}
+
+Chaque image de la vidéo est convertie dans l’espace colorimétrique YUV. Les composantes chromatiques U et V sont ensuite utilisées pour construire un histogramme bidimensionnel représentant la distribution jointe des couleurs indépendamment de la luminance.
+
+Le calcul des histogrammes est réalisé avec 64 bins sur chaque dimension afin d’obtenir une représentation plus stable et moins sensible au bruit. Les histogrammes successifs sont ensuite comparés à l’aide de plusieurs mesures :
+
+\begin{itemize}
+    \item Distance du Chi-Square
+    \item Distance de Bhattacharyya
+    \item Intersection d’histogrammes
+    \item Coefficient de corrélation
+\end{itemize}
+
+Ces mesures permettent d’évaluer la similarité entre deux images consécutives. Lorsqu’un changement de plan apparaît, les histogrammes présentent une variation brutale.
+
+\section{Question 1-}
+\subsection{Détection des changements de plans}
+
+Pour détecter automatiquement les transitions, un seuil adaptatif est calculé à partir de la moyenne et de l’écart-type des distances :
+
+\[
+T = \mu + 2.5 \sigma
+\]
+
+où $\mu$ représente la moyenne des distances et $\sigma$ leur écart-type.
+
+Les distances de Chi-Square et de Bhattacharyya présentent des pics importants lors des changements de plans, tandis que les mesures d’intersection et de corrélation diminuent fortement.
+
+\subsection{Cas des vidéos monochromes}
+
+Dans le cas des vidéos monochromes, les composantes chromatiques U et V contiennent très peu d’informations. Il est alors préférable d’utiliser le canal de luminance Y ou des descripteurs fondés sur la texture.
+
+\subsection{Conclusion}
+
+L’utilisation des histogrammes chromatiques constitue une méthode simple et efficace pour détecter les changements de plans dans une vidéo. Les résultats obtenus montrent que les mesures de distance permettent d’identifier correctement les transitions brutales entre différentes scènes.
+
+\end{document}

@@ -104,7 +104,10 @@ for video_idx, video_file in enumerate(video_files):
         # 2D HISTOGRAM OF (Vx,Vy)
         # ==============================================
 
-        maxV = 20
+        maxV = np.percentile(np.abs(flow), 99)
+
+        # Avoid invalid histogram range
+        maxV = max(maxV, 1e-3)
 
         hist = cv2.calcHist(
             [vx, vy],
@@ -143,6 +146,123 @@ for video_idx, video_file in enumerate(video_files):
         histogram_entropies.append(entropy)
 
         frame_indices.append(index)
+
+        # ==============================================
+        # LIVE VISUALIZATION OF HISTOGRAM 2D
+        # ==============================================
+
+        hist_smooth = cv2.GaussianBlur(hist, (3, 3), 0)
+
+        if np.amax(hist_smooth) > 0:
+
+            hist_img = (
+                (hist_smooth * 255.0)
+                / np.amax(hist_smooth)
+            ).astype(np.uint8)
+
+        else:
+
+            hist_img = hist_smooth.astype(np.uint8)
+
+        hist_resized = cv2.resize(
+            hist_img,
+            (256, 256),
+            interpolation=cv2.INTER_NEAREST
+        )
+
+        hist_color = cv2.applyColorMap(
+            hist_resized,
+            cv2.COLORMAP_JET
+        )
+
+        # ==============================================
+        # SAVE REPRESENTATIVE FIGURES
+        # ==============================================
+
+        if index in [100, 300, 500]:
+
+            # ------------------------------------------
+            # Optical flow visualization
+            # ------------------------------------------
+
+            hsv = np.zeros_like(frame2)
+
+            hsv[...,1] = 255
+            hsv[...,0] = ang * 180 / np.pi / 2
+
+            hsv[...,2] = cv2.normalize(
+                mag,
+                None,
+                0,
+                255,
+                cv2.NORM_MINMAX
+            )
+
+            flow_rgb = cv2.cvtColor(
+                hsv.astype(np.uint8),
+                cv2.COLOR_HSV2RGB
+            )
+
+            # ------------------------------------------
+            # Histogram RGB conversion
+            # ------------------------------------------
+
+            hist_rgb = cv2.cvtColor(
+                hist_color,
+                cv2.COLOR_BGR2RGB
+            )
+
+            # ------------------------------------------
+            # Create figure
+            # ------------------------------------------
+
+            fig, axs = plt.subplots(
+                1,
+                3,
+                figsize=(18,5)
+            )
+
+            # Current frame
+            axs[0].imshow(cv2.cvtColor(frame2, cv2.COLOR_BGR2RGB))
+            axs[0].set_title(f'Frame {index}')
+            axs[0].axis('off')
+
+            # Optical flow
+            axs[1].imshow(flow_rgb)
+            axs[1].set_title('Dense Optical Flow')
+            axs[1].axis('off')
+
+            # Histogram
+            axs[2].imshow(hist_rgb, origin='lower')
+            axs[2].set_title('2D Velocity Histogram')
+            axs[2].set_xlabel('Vx')
+            axs[2].set_ylabel('Vy')
+
+            plt.tight_layout()
+
+            video_name = (
+                video_file
+                .split('/')[-1]
+                .replace('.m4v', '')
+            )
+
+            plt.savefig(
+                f'../plots/{video_name}_flow_histogram_{index}.png',
+                dpi=150
+            )
+
+            plt.close()
+
+        # ==============================================
+        # LIVE DISPLAY
+        # ==============================================
+
+        # cv2.imshow('Video Tracking', frame2)
+        # cv2.imshow('2D Velocity Histogram (Vx, Vy)', hist_color)
+
+        # if cv2.waitKey(10) & 0xFF == 27:
+        #     print("  [INFO] Video skipped by user.")
+        #     break
 
         # ==============================================
         # NEXT FRAME
@@ -210,9 +330,7 @@ for i, result in enumerate(all_results):
     )
 
     axs[i][0].set_xlabel('Frame')
-
     axs[i][0].set_ylabel('Mean |V|')
-
     axs[i][0].grid(True)
 
     # ==============================================
@@ -231,9 +349,7 @@ for i, result in enumerate(all_results):
     )
 
     axs[i][1].set_xlabel('Frame')
-
     axs[i][1].set_ylabel('Std(|V|)')
-
     axs[i][1].grid(True)
 
     # ==============================================
@@ -252,9 +368,7 @@ for i, result in enumerate(all_results):
     )
 
     axs[i][2].set_xlabel('Frame')
-
     axs[i][2].set_ylabel('Entropy')
-
     axs[i][2].grid(True)
 
 # ==================================================
@@ -262,5 +376,7 @@ for i, result in enumerate(all_results):
 # ==================================================
 
 plt.tight_layout()
-
-plt.show()
+plt.savefig(
+    '../plots/q2_analysis.png',
+    dpi=150
+)
